@@ -559,6 +559,7 @@ def generate_html(self, papers: List[Dict], news: List[Dict]) -> str:
 </html>'''
         
         return html
+
     def _generate_papers_html(self, papers: List[Dict]) -> str:
         """生成论文HTML"""
         if not papers:
