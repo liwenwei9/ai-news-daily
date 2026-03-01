@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-AI News Daily - liwenwei9 专属版本（支持中英文）
-"""
-
-
 import os
 import datetime
 import pytz
@@ -104,7 +98,7 @@ class AINewsDaily:
                 "id": "2401.12345",
                 "title": "Large Language Models: A Survey",
                 "authors": ["AI Researcher"],
-                "summary": "Recent advances in large language models...",
+                "summary": "Recent advances in large language models have revolutionized the field of artificial intelligence. These models, trained on massive datasets, demonstrate unprecedented capabilities in natural language understanding, generation, and reasoning. This survey provides a comprehensive overview of the current state of large language models, including their architecture, training methods, applications, and challenges. We discuss key techniques such as self-supervised learning, attention mechanisms, and scaling laws, and explore real-world use cases in areas like chatbots, content creation, and code generation. Finally, we examine ethical considerations and future research directions for this rapidly evolving field.",
                 "published": datetime.datetime.now().strftime('%Y-%m-%d'),
                 "pdf_url": "https://arxiv.org/pdf/2401.12345.pdf",
                 "arxiv_url": "https://arxiv.org/abs/2401.12345",
@@ -131,10 +125,10 @@ class AINewsDaily:
         except Exception as e:
             print(f"⚠️ 获取新闻失败: {e}")
             news = [{
-                "title": "AI Breakthrough Announced",
+                "title": "AI Breakthrough Announced: New Model Achieves Human-Level Performance",
                 "source": "Tech News",
                 "link": "https://example.com",
-                "summary": "Major breakthrough in artificial intelligence...",
+                "summary": "Researchers have announced a major breakthrough in artificial intelligence with the development of a new model that achieves human-level performance on a range of cognitive tasks. The model, built on advanced transformer architecture, combines multimodal learning with reinforcement learning from human feedback to deliver unprecedented results. Experts say this development could accelerate the adoption of AI in healthcare, education, and industrial applications. However, concerns remain about the ethical implications and potential job displacement effects of increasingly capable AI systems. The research team has committed to open-sourcing key components of the model to promote responsible development and collaboration across the AI research community.",
                 "published": datetime.datetime.now().strftime('%Y-%m-%d'),
             }]
         return news
@@ -145,14 +139,15 @@ class AINewsDaily:
         date_str = now.strftime('%Y-%m-%d')
         time_str = now.strftime('%H:%M:%S')
 
-        html = f'''<!DOCTYPE html>
+        # 修复核心：将f-string中的JS模板语法{{}}替换为{{{{}}}}，避免冲突
+        html_template = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI News Daily</title>
     <style>
-        :root {{ --primary:#667eea; --secondary:#764ba2; --bg:#f5f7fa; --card:#fff; --text:#333; }}
+        :root {{{{ --primary:#667eea; --secondary:#764ba2; --bg:#f5f7fa; --card:#fff; --text:#333; }}}}
         *{{margin:0;padding:0;box-sizing:border-box;}}
         body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;background:var(--bg);color:var(--text);}}
         .container{{max-width:1000px;margin:0 auto;padding:20px;}}
@@ -186,33 +181,33 @@ class AINewsDaily:
         <h1 data-i18n="site_title">🤖 AI News Daily</h1>
         <div class="subtitle" data-i18n="subtitle">liwenwei9 的专属AI资讯站</div>
         <div class="stats">
-            <div class="stat-card"><div class="stat-number">{len(papers)}</div><div data-i18n="today_papers">📚 今日论文</div></div>
-            <div class="stat-card"><div class="stat-number">{len(news)}</div><div data-i18n="today_news">📰 今日新闻</div></div>
-            <div class="stat-card"><div class="stat-number">{len(papers)+len(news)}</div><div data-i18n="total_content">✨ 总计内容</div></div>
+            <div class="stat-card"><div class="stat-number">{paper_count}</div><div data-i18n="today_papers">📚 今日论文</div></div>
+            <div class="stat-card"><div class="stat-number">{news_count}</div><div data-i18n="today_news">📰 今日新闻</div></div>
+            <div class="stat-card"><div class="stat-number">{total_count}</div><div data-i18n="total_content">✨ 总计内容</div></div>
         </div>
     </header>
 
     <div class="content">
         <section class="section">
             <h2 class="section-title" data-i18n="paper_selection">📚 今日论文精选</h2>
-            {self._paper_html(papers)}
+            {papers_html}
         </section>
         <section class="section">
             <h2 class="section-title" data-i18n="news_selection">📰 今日新闻精选</h2>
-            {self._news_html(news)}
+            {news_html}
         </section>
     </div>
 
     <footer>
         <p data-i18n="footer_desc">🤖 由 AI 自动生成 | 每日更新 | liwenwei9 的专属版本</p>
         <p><span data-i18n="last_update">最后更新</span>: {date_str} | <span data-i18n="current_time">当前时间</span>: <span id="t">{time_str}</span></p>
-        <p><a href="https://github.com/{self.github_user}/{self.repo_name}" target="_blank" style="color:#667eea" data-i18n="view_project">查看 GitHub 项目</a></p>
+        <p><a href="https://github.com/{github_user}/{repo_name}" target="_blank" style="color:#667eea" data-i18n="view_project">查看 GitHub 项目</a></p>
     </footer>
 </div>
 
 <script>
-const translations = {
-    zh: {
+const translations = {{
+    zh: {{
         site_title: "🤖 AI News Daily",
         subtitle: "liwenwei9 的专属AI资讯站",
         today_papers: "📚 今日论文",
@@ -233,8 +228,8 @@ const translations = {
         no_paper_data: "暂无论文数据",
         no_news_data: "暂无新闻数据",
         footer_desc: "🤖 由 AI 自动生成 | 每日更新 | liwenwei9 的专属版本"
-    },
-    en: {
+    }},
+    en: {{
         site_title: "🤖 AI News Daily",
         subtitle: "liwenwei9's Exclusive AI News Station",
         today_papers: "📚 Today's Papers",
@@ -255,37 +250,50 @@ const translations = {
         no_paper_data: "No paper data available",
         no_news_data: "No news data available",
         footer_desc: "🤖 Auto-generated by AI | Daily Update | liwenwei9 Exclusive Version"
-    }
-};
+    }}
+}};
 
 let currentLang = localStorage.getItem('lang') || 'zh';
 
-function updateLang(lang) {
+function updateLang(lang) {{
     currentLang = lang;
     localStorage.setItem('lang', lang);
-    document.querySelectorAll('[data-i18n]').forEach(el => {
+    document.querySelectorAll('[data-i18n]').forEach(el => {{
         const k = el.dataset.i18n;
         if (translations[lang][k]) el.textContent = translations[lang][k];
-    });
+    }});
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
-}
+    document.querySelector(`[data-lang="${{lang}}"]`).classList.add('active');
+}}
 
-document.querySelectorAll('.lang-btn').forEach(b => {
+document.querySelectorAll('.lang-btn').forEach(b => {{
     b.addEventListener('click', () => updateLang(b.dataset.lang));
-});
+}});
 
 updateLang(currentLang);
 
-setInterval(() => {
+setInterval(() => {{
     const now = new Date();
     document.getElementById('t').textContent = currentLang === 'zh'
         ? now.toLocaleTimeString('zh-CN')
         : now.toLocaleTimeString('en-US');
-}, 1000);
+}}, 1000);
 </script>
 </body>
 </html>'''
+
+        # 替换模板变量（避免直接在f-string中嵌套复杂语法）
+        html = html_template.format(
+            paper_count=len(papers),
+            news_count=len(news),
+            total_count=len(papers) + len(news),
+            papers_html=self._paper_html(papers),
+            news_html=self._news_html(news),
+            date_str=date_str,
+            time_str=time_str,
+            github_user=self.github_user,
+            repo_name=self.repo_name
+        )
         return html
 
     def _paper_html(self, papers):
@@ -339,8 +347,11 @@ setInterval(() => {
             with open('docs/index.html', 'w', encoding='utf-8') as f:
                 f.write(html)
             print("✅ 生成完成：docs/index.html")
+            print(f"🌐 访问地址: {self.website_url}")
         except Exception as e:
             print(f"❌ 失败：{e}")
+            import traceback
+            traceback.print_exc()
 
 if __name__ == '__main__':
     AINewsDaily().run()
