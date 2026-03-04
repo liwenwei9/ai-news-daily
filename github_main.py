@@ -267,12 +267,52 @@ class AINewsDaily:
 
         return news_items
 
-    def merge_and_sort_items(self, papers: List[Dict], news: List[Dict]) -> List[Dict]:
-        """合并论文和新闻，按时间排序"""
-        all_items = papers + news
-        all_items.sort(key=lambda x: x.get('published_time', datetime.datetime.min), reverse=True)
-        return all_items
+    def merge_and_sort_items(self, papers, news):
+    """合并论文和新闻，并按时间排序"""
+    import pytz
+    from datetime import datetime
 
+    # 统一时区为UTC（或北京时间），消除offset-naive/aware差异
+    utc = pytz.UTC
+    beijing_tz = pytz.timezone('Asia/Shanghai')
+
+    items = []
+    
+    # 处理论文时间（确保带时区）
+    for paper in papers:
+        # 将论文的published时间转为带时区的datetime
+        if paper.get('published'):
+            # 如果是字符串，先解析；如果是datetime，确保带时区
+            if isinstance(paper['published'], str):
+                pub_dt = datetime.fromisoformat(paper['published'].replace('Z', '+00:00'))
+            else:
+                pub_dt = paper['published']
+            
+            # 确保时间带时区（如果没有，强制设为UTC）
+            if pub_dt.tzinfo is None or pub_dt.tzinfo.utcoffset(pub_dt) is None:
+                pub_dt = utc.localize(pub_dt)
+            
+            paper['published'] = pub_dt
+        items.append(paper)
+    
+    # 处理新闻时间（确保带时区）
+    for item in news:
+        if item.get('published'):
+            if isinstance(item['published'], str):
+                pub_dt = datetime.fromisoformat(item['published'].replace('Z', '+00:00'))
+            else:
+                pub_dt = item['published']
+            
+            if pub_dt.tzinfo is None or pub_dt.tzinfo.utcoffset(pub_dt) is None:
+                pub_dt = utc.localize(pub_dt)
+            
+            item['published'] = pub_dt
+        items.append(item)
+    
+    # 按发布时间降序排序（最新的在前）
+    items.sort(key=lambda x: x.get('published', datetime.min.replace(tzinfo=utc)), reverse=True)
+    
+    return items
     def generate_html(self, items: List[Dict]) -> str:
         """生成HTML页面"""
         now = datetime.datetime.now(pytz.timezone('Asia/Shanghai'))
