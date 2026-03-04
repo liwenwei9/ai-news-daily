@@ -1023,23 +1023,53 @@ class AINewsDaily:
 
     def run(self):
         """主运行函数"""
-        print("🚀 AI News Daily v3.0 (DeepSeek版) 开始运行...")
+        print("🚀 AI News Daily v4.0 (扩展版) 开始运行...")
         print(f"👤 GitHub用户: {self.github_user}")
         print(f"🌐 网站地址: {self.website_url}")
 
-        try:
-            papers = self.get_arxiv_papers()
-            news = self.get_tech_news()
-            items = self.merge_and_sort_items(papers, news)
-            html = self.generate_html(items)
+        # 获取当前日期
+        now = datetime.datetime.now(pytz.timezone('Asia/Shanghai'))
+        date_str = now.strftime('%Y/%m/%d')
 
-            with open('index.html', 'w', encoding='utf-8') as f:
+        try:
+            # 获取论文（arXiv 5篇 + HF 5篇 + SS 5篇 = 15篇）
+            print("\n=== 开始采集论文 ===")
+            arxiv_papers = self.get_arxiv_papers()
+            hf_papers = self.get_huggingface_papers(count=5)
+            ss_papers = self.get_semantic_scholar_papers(count=5)
+            papers = arxiv_papers + hf_papers + ss_papers
+
+            # 获取新闻（20条）
+            print("\n=== 开始采集新闻 ===")
+            news = self.get_tech_news(target_count=20)
+
+            # 合并并排序
+            items = self.merge_and_sort_items(papers, news)
+
+            # 生成带日期的目录结构
+            output_dir = os.path.join(date_str)
+            os.makedirs(output_dir, exist_ok=True)
+
+            # 生成首页
+            html = self.generate_html(items, date_str)
+            index_path = os.path.join(output_dir, 'index.html')
+            with open(index_path, 'w', encoding='utf-8') as f:
                 f.write(html)
 
-            print("✅ 网站生成完成！")
-            print(f"📁 文件保存: index.html")
+            # 生成详情页
+            self.generate_detail_pages(items, output_dir, date_str)
+
+            # 更新根目录index.html（重定向到当天）
+            root_html = self.generate_root_index(date_str)
+            with open('index.html', 'w', encoding='utf-8') as f:
+                f.write(root_html)
+
+            # 更新历史索引
+            self.update_archive_index(date_str)
+
+            print("\n✅ 网站生成完成！")
+            print(f"📁 文件保存: {date_str}/index.html")
             print(f"📊 内容统计: {len(papers)}篇论文 + {len(news)}条新闻 = {len(items)}条内容")
-            print("💰 使用DeepSeek翻译，成本低廉，中文质量优秀")
 
         except Exception as e:
             print(f"❌ 运行失败: {e}")
