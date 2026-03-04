@@ -267,7 +267,7 @@ class AINewsDaily:
 
         return news_items
 
-        def merge_and_sort_items(self, papers, news):
+    def merge_and_sort_items(self, papers, news):
         """合并论文和新闻，并按时间排序"""
         import pytz
         from datetime import datetime
