@@ -39,7 +39,7 @@ class AINewsDaily:
         self.website_url = f"https://{self.github_user}.github.io/{self.repo_name}/"
 
         # 创建输出目录
-        os.makedirs('docs', exist_ok=True)
+        pass # os.makedirs('docs', exist_ok=True)
 
         # DeepSeek客户端
         self.deepseek_client = None
@@ -758,11 +758,11 @@ class AINewsDaily:
             items = self.merge_and_sort_items(papers, news)
             html = self.generate_html(items)
 
-            with open('docs/index.html', 'w', encoding='utf-8') as f:
+            with open('index.html', 'w', encoding='utf-8') as f:
                 f.write(html)
 
             print("✅ 网站生成完成！")
-            print(f"📁 文件保存: docs/index.html")
+            print(f"📁 文件保存: index.html")
             print(f"📊 内容统计: {len(papers)}篇论文 + {len(news)}条新闻 = {len(items)}条内容")
             print("💰 使用DeepSeek翻译，成本低廉，中文质量优秀")
 
