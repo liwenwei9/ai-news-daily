@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true  # 关键：取消正在进行的部署，避免重复
+  cancel-in-progress: true  # 取消正在进行的部署，避免重复
 
 jobs:
   build-and-deploy:
@@ -28,7 +28,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        clean: true  # 清理工作区，避免残留文件
+        clean: true  # 清理工作区残留
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -43,37 +43,29 @@ jobs:
 
     - name: Run AI News Aggregator
       run: |
-        # 先清理旧的index.html，避免残留
+        # 清理旧文件 + 运行脚本 + 验证文件
         rm -f index.html
-        # 运行脚本生成新的index.html
         python github_main.py
-        # 强制验证文件是否存在（关键调试）
-        if [ -f "index.html" ]; then
-          echo "✅ index.html 生成成功，文件大小：$(du -h index.html | cut -f1)"
-          cat index.html | head -10  # 打印前10行确认内容
-        else
-          echo "❌ index.html 未生成，创建兜底文件"
-          echo "<html><body><h1>临时页面</h1></body></html>" > index.html
+        
+        # 关键：强制验证并兜底，确保index.html存在
+        if [ ! -f "index.html" ]; then
+          echo "⚠️ index.html未生成，创建兜底页面"
+          echo "<!DOCTYPE html><html><body><h1>AI News Daily</h1><p>页面生成中...</p></body></html>" > index.html
         fi
+        ls -la index.html  # 日志中显示文件信息
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
-      with:
-        # 重置Pages配置，避免冲突
-        force: true
 
-    - name: Upload artifact (唯一名称，避免冲突)
+    # 核心修复：用官方默认名称上传artifact（github-pages）
+    - name: Upload GitHub Pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: '.'  # 根目录
-        name: github-pages-artifact  # 自定义唯一名称，避免重复
-        retention-days: 1  # 缩短产物保留时间，减少冲突
+        path: '.'  # 根目录，包含index.html
+        # 不自定义name，使用默认值：github-pages
 
+    # 修复参数错误 + 用默认artifact名称部署
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
-      with:
-        # 指定上传的artifact名称，解决多产物冲突
-        artifact-name: github-pages-artifact
-        # 强制部署，覆盖旧版本
-        force: true
+      # 去掉错误的artifact-name/force参数，使用默认配置
