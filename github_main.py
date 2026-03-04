@@ -59,6 +59,90 @@ class AINewsDaily:
         # 翻译缓存
         self.translation_cache = self.load_cache()
 
+        # 新闻源配置
+        self.news_sources = {
+            # 国际科技媒体
+            'techcrunch': {
+                'name': 'TechCrunch',
+                'url': 'https://techcrunch.com/category/artificial-intelligence/feed/',
+                'priority': 1
+            },
+            'theverge': {
+                'name': 'The Verge',
+                'url': 'https://www.theverge.com/rss/ai/index.xml',
+                'priority': 1
+            },
+            'wired': {
+                'name': 'Wired',
+                'url': 'https://www.wired.com/feed/tag/ai/latest/rss',
+                'priority': 1
+            },
+            'venturebeat': {
+                'name': 'VentureBeat',
+                'url': 'https://venturebeat.com/category/ai/feed/',
+                'priority': 1
+            },
+            # AI垂直媒体/公司博客
+            'openai': {
+                'name': 'OpenAI Blog',
+                'url': 'https://openai.com/blog/rss.xml',
+                'priority': 2
+            },
+            'google_ai': {
+                'name': 'Google AI',
+                'url': 'https://blog.google/technology/ai/rss/',
+                'priority': 2
+            },
+            'microsoft_ai': {
+                'name': 'Microsoft AI',
+                'url': 'https://blogs.microsoft.com/ai/feed/',
+                'priority': 2
+            },
+            'meta_ai': {
+                'name': 'Meta AI',
+                'url': 'https://ai.meta.com/feed/',
+                'priority': 2
+            },
+            'huggingface': {
+                'name': 'Hugging Face',
+                'url': 'https://huggingface.co/blog/feed.xml',
+                'priority': 2
+            },
+            # 国内科技媒体
+            '36kr': {
+                'name': '36氪',
+                'url': 'https://36kr.com/newsflashes',
+                'priority': 3
+            },
+            'huxiu': {
+                'name': '虎嗅',
+                'url': 'https://www.huxiu.com/',
+                'priority': 3
+            },
+            'geekpark': {
+                'name': '极客公园',
+                'url': 'https://www.geekpark.com/news',
+                'priority': 3
+            }
+        }
+
+        # 论文源配置
+        self.paper_sources = {
+            'arxiv': {
+                'name': 'arXiv',
+                'count': 5,
+                'categories': ['cs.AI', 'cs.LG', 'cs.CV']
+            },
+            'huggingface': {
+                'name': 'Hugging Face',
+                'count': 5
+            },
+            'semantic_scholar': {
+                'name': 'Semantic Scholar',
+                'count': 5
+            }
+        }
+
     def load_cache(self) -> Dict[str, str]:
         """加载翻译缓存"""
         try:
