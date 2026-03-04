@@ -548,10 +548,11 @@ class AINewsDaily:
         
         return items
 		
-    def generate_html(self, items: List[Dict]) -> str:
+    def generate_html(self, items: List[Dict], date_str: str = None) -> str:
         """生成HTML页面"""
-        now = datetime.datetime.now(pytz.timezone('Asia/Shanghai'))
-        date_str = now.strftime('%Y/%m/%d')
+        if date_str is None:
+            now = datetime.datetime.now(pytz.timezone('Asia/Shanghai'))
+            date_str = now.strftime('%Y/%m/%d')
 
         paper_count = sum(1 for item in items if item['type'] == 'paper')
         news_count = sum(1 for item in items if item['type'] == 'news')
@@ -955,16 +956,43 @@ class AINewsDaily:
 </html>'''
         return html
 
+    def generate_root_index(self, latest_date: str) -> str:
+        """生成根目录index.html（重定向到当天）"""
+        html = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI资讯日报 - 每日AI新闻和论文</title>
+    <meta http-equiv="refresh" content="0;url={latest_date}/index.html">
+    <style>
+        body {{ font-family: -apple-system, sans-serif; text-align: center; padding: 50px; }}
+        a {{ color: #ff6600; }}
+    </style>
+</head>
+<body>
+    <p>正在跳转到最新内容...</p>
+    <p><a href="{latest_date}/index.html">如果未自动跳转，请点击这里</a></p>
+</body>
+</html>'''
+        return html
+
     def _generate_items_html(self, items: List[Dict]) -> str:
         """生成条目HTML"""
         if not items:
             return '<p style="text-align: center; color: var(--text-light);">暂无数据</p>'
 
         html_parts = []
-        for item in items:
+        for idx, item in enumerate(items, 1):
             item_type = item['type']
             type_name = '论文' if item_type == 'paper' else '新闻'
             type_class = 'paper' if item_type == 'paper' else 'news'
+
+            # 生成详情页链接
+            if item_type == 'paper':
+                detail_link = f"paper-{idx}.html"
+            else:
+                detail_link = f"news-{idx}.html"
 
             meta_html = ''
             if item_type == 'paper':
@@ -985,12 +1013,14 @@ class AINewsDaily:
             actions_html = ''
             if item_type == 'paper':
                 actions_html = f'''
-                    <a href="{item['pdf_url']}" class="btn" target="_blank">📄 PDF</a>
+                    <a href="{detail_link}" class="btn" target="_blank">📖 查看详情</a>
+                    <a href="{item['pdf_url']}" class="btn btn-secondary" target="_blank">📄 PDF</a>
                     <a href="{item['arxiv_url']}" class="btn btn-secondary" target="_blank">🔗 arXiv</a>
                 '''
             else:
                 actions_html = f'''
-                    <a href="{item['link']}" class="btn" target="_blank">🔗 阅读原文</a>
+                    <a href="{detail_link}" class="btn" target="_blank">📖 查看详情</a>
+                    <a href="{item['link']}" class="btn btn-secondary" target="_blank">🔗 阅读原文</a>
                 '''
 
             html = f'''
@@ -1003,7 +1033,7 @@ class AINewsDaily:
                     <div class="item-content">
                         <div>
                             <span class="type-badge {type_class}">{type_name}</span>
-                            <h3 class="item-title">{item.get('title_zh', item['title'])}</h3>
+                            <h3 class="item-title"><a href="{detail_link}" style="color: inherit; text-decoration: none;">{item.get('title_zh', item['title'])}</a></h3>
                         </div>
                         <div class="item-meta">
                             {meta_html}
@@ -1218,6 +1248,73 @@ class AINewsDaily:
 </body>
 </html>'''
         return html
+
+    def update_archive_index(self, current_date: str):
+        """更新历史归档索引页面"""
+        print("📚 更新历史归档...")
+
+        # 读取现有归档（如果存在）
+        archive_file = 'archive/index.html'
+        dates = []
+
+        if os.path.exists(archive_file):
+            try:
+                with open(archive_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    # 提取已有日期
+                    import re
+                    dates = re.findall(r'href="(\d{4}/\d{2}/\d{2})/"', content)
+            except:
+                pass
+
+        # 添加当前日期
+        date_dir = current_date.replace('/', '/')
+        if date_dir not in dates:
+            dates.append(date_dir)
+
+        # 按日期倒序排列
+        dates.sort(reverse=True)
+
+        # 生成归档页面
+        date_links = []
+        for d in dates:
+            date_label = d.replace('/', '年').replace('/', '月') + '日'
+            date_links.append(f'<li><a href="../{d}/index.html">{date_label}</a></li>')
+
+        archive_html = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史归档 - AI资讯日报</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, sans-serif; background: #f6f6ef; min-height: 100vh; padding: 40px 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; }}
+        h1 {{ text-align: center; margin-bottom: 30px; color: #333; }}
+        ul {{ list-style: none; }}
+        li {{ margin-bottom: 10px; }}
+        a {{ display: block; padding: 15px 20px; background: white; color: #333; text-decoration: none; border-radius: 8px; transition: all 0.3s; }}
+        a:hover {{ background: #ff6600; color: white; }}
+        .back {{ display: inline-block; margin-bottom: 20px; color: #ff6600; text-decoration: none; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../" class="back">← 返回最新</a>
+        <h1>📚 历史归档</h1>
+        <ul>
+            {''.join(date_links)}
+        </ul>
+    </div>
+</body>
+</html>'''
+
+        os.makedirs('archive', exist_ok=True)
+        with open(archive_file, 'w', encoding='utf-8') as f:
+            f.write(archive_html)
+
+        print(f"✅ 历史归档已更新，共 {len(dates)} 天")
 
     def run(self):
         """主运行函数"""
