@@ -295,63 +295,73 @@ class AINewsDaily:
 
         return papers
 
-    def get_tech_news(self) -> List[Dict[str, Any]]:
-        """获取科技新闻"""
+    def get_tech_news(self, target_count: int = 20) -> List[Dict[str, Any]]:
+        """获取科技新闻（多源）"""
         print("📰 获取科技新闻...")
 
         news_items = []
-        try:
-            feed = feedparser.parse('https://www.technologyreview.com/feed/')
 
-            count = 0
-            for entry in feed.entries:
-                if count >= 5:
-                    break
+        for source_key, source_config in self.news_sources.items():
+            try:
+                print(f"  📡 正在获取: {source_config['name']}")
+                feed = feedparser.parse(source_config['url'], timeout=10)
 
-                text = f"{entry.title} {entry.get('summary', '')}"
-                if any(keyword in text.lower() for keyword in ['ai', 'artificial intelligence', 'machine learning']):
-                    # 使用DeepSeek翻译标题
-                    title_zh = self.translate_to_chinese(entry.title, is_title=True)
+                for entry in feed.entries:
+                    text = f"{entry.title} {entry.get('summary', '')}"
+                    # AI相关关键词过滤
+                    keywords = ['ai', 'artificial intelligence', 'machine learning',
+                               'deep learning', 'gpt', 'llm', 'openai', 'google',
+                               'anthropic', 'meta', '人工智能', '机器学习', '深度学习']
 
-                    # 翻译摘要
-                    summary_text = entry.get('summary', '')
-                    summary_zh = self.translate_to_chinese(summary_text[:500]) if summary_text else title_zh
+                    if any(kw in text.lower() for kw in keywords):
+                        summary_text = entry.get('summary', '')
+                        # 清理HTML标签
+                        summary_text = re.sub(r'<[^>]+>', '', summary_text)
 
-                    summary_quote = self.generate_one_sentence_summary(title_zh, max_length=80)
+                        # 翻译
+                        title_zh = self.translate_to_chinese(entry.title, is_title=True)
+                        summary_zh = self.translate_to_chinese(summary_text[:500]) if summary_text else title_zh
 
-                    published_time = datetime.datetime.now()
-                    if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                        try:
-                            published_time = datetime.datetime(*entry.published_parsed[:6])
-                        except:
-                            pass
+                        # 发布时间
+                        published_time = datetime.datetime.now()
+                        if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                            try:
+                                published_time = datetime.datetime(*entry.published_parsed[:6])
+                            except:
+                                pass
 
-                    news = {
-                        'type': 'news',
-                        'title': entry.title,
-                        'title_zh': title_zh,
-                        'summary_quote': summary_quote,
-                        'source': 'MIT Technology Review',
-                        'link': entry.link,
-                        'summary': summary_zh,
-                        'summary_en': summary_text,
-                        'published': entry.get('published', datetime.datetime.now().strftime('%Y-%m-%d')),
-                        'published_time': published_time,
-                        'score': random.randint(100, 800)
-                    }
-                    news_items.append(news)
-                    count += 1
+                        news = {
+                            'type': 'news',
+                            'title': entry.title,
+                            'title_zh': title_zh,
+                            'summary_quote': self.generate_one_sentence_summary(title_zh),
+                            'source': source_config['name'],
+                            'source_key': source_key,
+                            'link': entry.link,
+                            'summary': summary_zh,
+                            'summary_en': summary_text,
+                            'published': entry.get('published', datetime.datetime.now().strftime('%Y-%m-%d')),
+                            'published_time': published_time,
+                            'priority': source_config['priority'],
+                            'score': random.randint(100, 800)
+                        }
 
-            print(f"✅ 获取到 {len(news_items)} 条新闻")
+                        news_items.append(news)
 
-        except Exception as e:
-            print(f"⚠️ 获取新闻失败: {e}")
-            import traceback
-            traceback.print_exc()
+                print(f"    ✅ {source_config['name']}: 获取成功")
 
+            except Exception as e:
+                print(f"    ⚠️ {source_config['name']}: 获取失败 - {e}")
+
+        # 按优先级排序，同优先级按时间排序
+        news_items.sort(key=lambda x: (x['priority'], x['published_time']), reverse=True)
+
+        # 限制数量
+        news_items = news_items[:target_count]
+
+        print(f"✅ 共获取 {len(news_items)} 条新闻")
         return news_items
 
-   
     def merge_and_sort_items(self, papers, news):
         """合并论文和新闻，并按时间排序"""
         import pytz
