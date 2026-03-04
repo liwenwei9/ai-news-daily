@@ -22,6 +22,7 @@ import re
 import random
 import hashlib
 import time
+import requests
 
 # 尝试导入OpenAI库（DeepSeek兼容OpenAI格式）
 try:
@@ -292,6 +293,124 @@ class AINewsDaily:
             print(f"⚠️ 获取论文失败: {e}")
             import traceback
             traceback.print_exc()
+
+        return papers
+
+    def get_huggingface_papers(self, count: int = 5) -> List[Dict[str, Any]]:
+        """从Hugging Face获取AI论文"""
+        print("📚 获取Hugging Face论文...")
+
+        papers = []
+        try:
+            url = "https://huggingface.co/api/papers"
+            params = {
+                'sort': 'downloads',
+                'direction': -1,
+                'limit': count * 2
+            }
+
+            response = requests.get(url, params=params, timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+
+                for item in data[:count]:
+                    title = item.get('title', '')
+                    if not title:
+                        continue
+
+                    title_zh = self.translate_to_chinese(title, is_title=True)
+
+                    summary = item.get('paper_id', '')
+                    summary_zh = title_zh
+
+                    paper = {
+                        'type': 'paper',
+                        'id': item.get('id', item.get('paper_id', '')),
+                        'title': title,
+                        'title_zh': title_zh,
+                        'summary_quote': self.generate_one_sentence_summary(title_zh),
+                        'authors': [a.get('author_name', '') for a in item.get('authors', [])[:3]],
+                        'summary': summary_zh,
+                        'summary_en': summary,
+                        'published': item.get('published', datetime.datetime.now().strftime('%Y-%m-%d')),
+                        'published_time': datetime.datetime.now(),
+                        'pdf_url': item.get('pdf_url', ''),
+                        'arxiv_url': item.get('arxiv_id', ''),
+                        'url': item.get('url', ''),
+                        'category': 'Hugging Face',
+                        'source': 'Hugging Face',
+                        'score': random.randint(50, 500)
+                    }
+                    papers.append(paper)
+
+                print(f"✅ 获取到 {len(papers)} 篇论文")
+
+        except Exception as e:
+            print(f"⚠️ 获取Hugging Face论文失败: {e}")
+
+        return papers
+
+
+    def get_semantic_scholar_papers(self, count: int = 5) -> List[Dict[str, Any]]:
+        """从Semantic Scholar获取AI论文"""
+        print("📚 获取Semantic Scholar论文...")
+
+        papers = []
+        try:
+            url = "https://api.semantic scholar.org/graph/v1/paper/search"
+            params = {
+                'query': 'artificial intelligence machine learning',
+                'limit': count * 2,
+                'fields': 'title,abstract,authors,year,url,externalIds'
+            }
+
+            headers = {'Accept': 'application/json'}
+            response = requests.get(url, params=params, headers=headers, timeout=30)
+
+            if response.status_code == 200:
+                data = response.json()
+                papers_data = data.get('data', [])
+
+                for item in papers_data[:count]:
+                    title = item.get('title', '')
+                    if not title:
+                        continue
+
+                    title_zh = self.translate_to_chinese(title, is_title=True)
+
+                    abstract = item.get('abstract', '')
+                    summary_zh = self.translate_to_chinese(abstract[:500]) if abstract else title_zh
+
+                    authors = item.get('authors', [])[:3]
+                    authors_names = [a.get('name', '') for a in authors]
+
+                    external_ids = item.get('externalIds', {})
+                    arxiv_id = external_ids.get('ArXiv', '')
+
+                    paper = {
+                        'type': 'paper',
+                        'id': arxiv_id or item.get('paperId', ''),
+                        'title': title,
+                        'title_zh': title_zh,
+                        'summary_quote': self.generate_one_sentence_summary(title_zh),
+                        'authors': authors_names,
+                        'summary': summary_zh,
+                        'summary_en': abstract,
+                        'published': str(item.get('year', datetime.datetime.now().year)),
+                        'published_time': datetime.datetime.now(),
+                        'pdf_url': f"https://arxiv.org/pdf/{arxiv_id}" if arxiv_id else '',
+                        'arxiv_url': f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else '',
+                        'url': item.get('url', ''),
+                        'category': 'AI/ML',
+                        'source': 'Semantic Scholar',
+                        'score': random.randint(50, 500)
+                    }
+                    papers.append(paper)
+
+                print(f"✅ 获取到 {len(papers)} 篇论文")
+
+        except Exception as e:
+            print(f"⚠️ 获取Semantic Scholar论文失败: {e}")
 
         return papers
 
