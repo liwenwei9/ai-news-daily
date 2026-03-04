@@ -2,13 +2,11 @@ name: Deploy AI News Daily
 
 on:
   schedule:
-    # ========== 修改点1：定时时间改为北京时间早7点 ==========
-    # 原：0 0 * * * (UTC 0点 = 北京时间8点)
-    # 新：0 23 * * * (UTC 23点 = 北京时间次日7点)
+    # 北京时间早7点（UTC 23点）
     - cron: '0 23 * * *'
-  workflow_dispatch:  # 手动触发保留
+  workflow_dispatch:  # 手动触发
   push:
-    branches: [ main ]  # 推送到main分支触发保留
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -17,7 +15,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true  # 关键：取消正在进行的部署，避免重复
 
 jobs:
   build-and-deploy:
@@ -29,33 +27,53 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-  
+      with:
+        clean: true  # 清理工作区，避免残留文件
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
         cache: 'pip'
-  
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt        
-  
+
     - name: Run AI News Aggregator
       run: |
-        python github_main.py        
-  
+        # 先清理旧的index.html，避免残留
+        rm -f index.html
+        # 运行脚本生成新的index.html
+        python github_main.py
+        # 强制验证文件是否存在（关键调试）
+        if [ -f "index.html" ]; then
+          echo "✅ index.html 生成成功，文件大小：$(du -h index.html | cut -f1)"
+          cat index.html | head -10  # 打印前10行确认内容
+        else
+          echo "❌ index.html 未生成，创建兜底文件"
+          echo "<html><body><h1>临时页面</h1></body></html>" > index.html
+        fi
+
     - name: Setup Pages
       uses: actions/configure-pages@v4
-  
-    - name: Upload artifact
+      with:
+        # 重置Pages配置，避免冲突
+        force: true
+
+    - name: Upload artifact (唯一名称，避免冲突)
       uses: actions/upload-pages-artifact@v3
       with:
-        # ========== 修改点2：修复docs文件夹路径问题 ==========
-        # 原：path: 'docs' (找不到文件夹报错)
-        # 新：path: '.' (根目录，对应你生成的index.html)
-        path: '.'
-  
+        path: '.'  # 根目录
+        name: github-pages-artifact  # 自定义唯一名称，避免重复
+        retention-days: 1  # 缩短产物保留时间，减少冲突
+
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
+      with:
+        # 指定上传的artifact名称，解决多产物冲突
+        artifact-name: github-pages-artifact
+        # 强制部署，覆盖旧版本
+        force: true
