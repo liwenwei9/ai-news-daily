@@ -1021,6 +1021,204 @@ class AINewsDaily:
 
         return '\n'.join(html_parts)
 
+    def generate_detail_pages(self, items: List[Dict], output_dir: str, date_str: str):
+        """生成所有详情页"""
+        print("📄 生成详情页...")
+
+        detail_dir = output_dir
+        os.makedirs(detail_dir, exist_ok=True)
+
+        for idx, item in enumerate(items, 1):
+            if item['type'] == 'paper':
+                filename = f"paper-{idx}.html"
+            else:
+                filename = f"news-{idx}.html"
+
+            detail_html = self.generate_detail_html(item, filename, date_str)
+            detail_path = os.path.join(detail_dir, filename)
+            with open(detail_path, 'w', encoding='utf-8') as f:
+                f.write(detail_html)
+
+        print(f"✅ 生成 {len(items)} 个详情页")
+
+    def generate_detail_html(self, item: Dict, current_filename: str, date_str: str) -> str:
+        """生成单个详情页"""
+        item_type = item['type']
+        type_name = '论文' if item_type == 'paper' else '新闻'
+
+        # 元信息
+        if item_type == 'paper':
+            authors_str = ', '.join(item['authors']) if item.get('authors') else '未知'
+            meta_html = f"""
+            <div class="meta-row"><span class="label">作者:</span> {authors_str}</div>
+            <div class="meta-row"><span class="label">分类:</span> {item.get('category', 'AI')}</div>
+            """
+            actions_html = f"""
+            <a href="{item.get('pdf_url', '')}" class="btn" target="_blank">📄 阅读PDF</a>
+            <a href="{item.get('arxiv_url', '')}" class="btn btn-secondary" target="_blank">🔗 arXiv</a>
+            """
+        else:
+            meta_html = f"""
+            <div class="meta-row"><span class="label">来源:</span> {item.get('source', '未知')}</div>
+            """
+            actions_html = f"""
+            <a href="{item.get('link', '')}" class="btn" target="_blank">🔗 阅读原文</a>
+            """
+
+        summary_en_html = f'<div class="summary-en"><h3>英文摘要</h3><p>{item.get("summary_en", "")}</p></div>' if item.get('summary_en') else ''
+
+        html = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{item.get('title_zh', item['title'])} - AI资讯日报</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        :root {{
+            --orange: #ff6600;
+            --text: #333;
+            --text-light: #828282;
+            --bg: #f6f6ef;
+            --card: #ffffff;
+            --border: #e6e6e6;
+            --yellow: #ffc107;
+        }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }}
+        .back-link {{
+            display: inline-block;
+            margin-bottom: 30px;
+            color: var(--orange);
+            text-decoration: none;
+            font-weight: 500;
+        }}
+        .back-link:hover {{ text-decoration: underline; }}
+        .detail-card {{
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }}
+        .type-badge {{
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--yellow);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }}
+        .type-badge.news {{ background: #4CAF50; }}
+        h1 {{
+            font-size: 1.8rem;
+            line-height: 1.4;
+            margin-bottom: 25px;
+            color: var(--text);
+        }}
+        .meta {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 25px;
+        }}
+        .meta-row {{
+            font-size: 0.95rem;
+            color: var(--text-light);
+        }}
+        .label {{ font-weight: 600; color: var(--text); }}
+        .summary {{
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            color: var(--text);
+        }}
+        .summary h: 10px3 {{ margin-bottom; }}
+        .summary-en {{
+            font-size: 0.9rem;
+            color: var(--text-light);
+            padding: 15px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }}
+        .summary-en h3 {{ margin-bottom: 10px; }}
+        .actions {{
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }}
+        .btn {{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: var(--orange);
+            color: white !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }}
+        .btn:hover {{ opacity: 0.9; transform: translateY(-1px); }}
+        .btn-secondary {{ background: var(--text-light); }}
+        .original-title {{
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--border);
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回首页</a>
+
+        <div class="detail-card">
+            <span class="type-badge {item_type}">{type_name}</span>
+
+            <h1>{item.get('title_zh', item['title'])}</h1>
+
+            <div class="meta">
+                <div class="meta-row"><span class="label">发布时间:</span> {item.get('published', '')}</div>
+                {meta_html}
+            </div>
+
+            <div class="summary">
+                <h3>中文摘要</h3>
+                <p>{item.get('summary', '')}</p>
+            </div>
+
+            {summary_en_html}
+
+            <div class="actions">
+                {actions_html}
+            </div>
+
+            <div class="original-title">
+                <strong>原文标题:</strong> {item.get('title', '')}
+            </div>
+        </div>
+    </div>
+</body>
+</html>'''
+        return html
+
     def run(self):
         """主运行函数"""
         print("🚀 AI News Daily v4.0 (扩展版) 开始运行...")
