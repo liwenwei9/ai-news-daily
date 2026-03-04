@@ -267,72 +267,73 @@ class AINewsDaily:
 
         return news_items
 
-def merge_and_sort_items(self, papers, news):
-    """合并论文和新闻，并按时间排序"""
-    import pytz
-    from datetime import datetime
-    import email.utils  # 用于解析RFC 2822格式的时间（如Tue, 03 Mar 2026 13:30:00 +0000）
+   
+    def merge_and_sort_items(self, papers, news):
+        """合并论文和新闻，并按时间排序"""
+        import pytz
+        from datetime import datetime
+        import email.utils  # 用于解析RFC 2822格式的时间（如Tue, 03 Mar 2026 13:30:00 +0000）
 
-    # 统一时区为UTC，消除offset-naive/aware差异
-    utc = pytz.UTC
-    beijing_tz = pytz.timezone('Asia/Shanghai')
+        # 统一时区为UTC，消除offset-naive/aware差异
+        utc = pytz.UTC
+        beijing_tz = pytz.timezone('Asia/Shanghai')
 
-    items = []
-    
-    # 处理论文时间（确保带时区）
-    for paper in papers:
-        if paper.get('published'):
-            pub_dt = None
-            # 处理论文的时间格式（通常是ISO格式）
-            try:
-                if isinstance(paper['published'], str):
-                    # 尝试ISO格式解析
-                    pub_dt = datetime.fromisoformat(paper['published'].replace('Z', '+00:00'))
-                else:
-                    pub_dt = paper['published']
-            except:
-                # 解析失败则用当前时间兜底
-                pub_dt = datetime.now(utc)
-            
-            # 确保时间带时区
-            if pub_dt.tzinfo is None or pub_dt.tzinfo.utcoffset(pub_dt) is None:
-                pub_dt = utc.localize(pub_dt)
-            
-            paper['published'] = pub_dt
-        items.append(paper)
-    
-    # 处理新闻时间（兼容RFC 2822格式）
-    for item in news:
-        if item.get('published'):
-            pub_dt = None
-            try:
-                if isinstance(item['published'], str):
-                    # 先尝试解析RFC 2822格式（新闻常用）
-                    parsed_date = email.utils.parsedate_tz(item['published'])
-                    if parsed_date:
-                        pub_dt = datetime.fromtimestamp(email.utils.mktime_tz(parsed_date))
-                        # 转为UTC时区的aware时间
-                        pub_dt = utc.localize(pub_dt)
+        items = []
+        
+        # 处理论文时间（确保带时区）
+        for paper in papers:
+            if paper.get('published'):
+                pub_dt = None
+                # 处理论文的时间格式（通常是ISO格式）
+                try:
+                    if isinstance(paper['published'], str):
+                        # 尝试ISO格式解析
+                        pub_dt = datetime.fromisoformat(paper['published'].replace('Z', '+00:00'))
                     else:
-                        # 备用：尝试ISO格式
-                        pub_dt = datetime.fromisoformat(item['published'].replace('Z', '+00:00'))
-                else:
-                    pub_dt = item['published']
-            except:
-                # 所有解析失败则用当前时间兜底
-                pub_dt = datetime.now(utc)
-            
-            # 确保时间带时区
-            if pub_dt.tzinfo is None or pub_dt.tzinfo.utcoffset(pub_dt) is None:
-                pub_dt = utc.localize(pub_dt)
-            
-            item['published'] = pub_dt
-        items.append(item)
-    
-    # 按发布时间降序排序（最新的在前）
-    items.sort(key=lambda x: x.get('published', datetime.min.replace(tzinfo=utc)), reverse=True)
-    
-    return items
+                        pub_dt = paper['published']
+                except:
+                    # 解析失败则用当前时间兜底
+                    pub_dt = datetime.now(utc)
+                
+                # 确保时间带时区
+                if pub_dt.tzinfo is None or pub_dt.tzinfo.utcoffset(pub_dt) is None:
+                    pub_dt = utc.localize(pub_dt)
+                
+                paper['published'] = pub_dt
+            items.append(paper)
+        
+        # 处理新闻时间（兼容RFC 2822格式）
+        for item in news:
+            if item.get('published'):
+                pub_dt = None
+                try:
+                    if isinstance(item['published'], str):
+                        # 先尝试解析RFC 2822格式（新闻常用）
+                        parsed_date = email.utils.parsedate_tz(item['published'])
+                        if parsed_date:
+                            pub_dt = datetime.fromtimestamp(email.utils.mktime_tz(parsed_date))
+                            # 转为UTC时区的aware时间
+                            pub_dt = utc.localize(pub_dt)
+                        else:
+                            # 备用：尝试ISO格式
+                            pub_dt = datetime.fromisoformat(item['published'].replace('Z', '+00:00'))
+                    else:
+                        pub_dt = item['published']
+                except:
+                    # 所有解析失败则用当前时间兜底
+                    pub_dt = datetime.now(utc)
+                
+                # 确保时间带时区
+                if pub_dt.tzinfo is None or pub_dt.tzinfo.utcoffset(pub_dt) is None:
+                    pub_dt = utc.localize(pub_dt)
+                
+                item['published'] = pub_dt
+            items.append(item)
+        
+        # 按发布时间降序排序（最新的在前）
+        items.sort(key=lambda x: x.get('published', datetime.min.replace(tzinfo=utc)), reverse=True)
+        
+        return items
 		
     def generate_html(self, items: List[Dict]) -> str:
         """生成HTML页面"""
