@@ -306,7 +306,7 @@ class AINewsDaily:
             params = {
                 'sort': 'downloads',
                 'direction': -1,
-                'limit': count * 2
+                'limit': count
             }
 
             response = requests.get(url, params=params, timeout=30)
@@ -360,7 +360,7 @@ class AINewsDaily:
             url = "https://api.semanticscholar.org/graph/v1/paper/search"
             params = {
                 'query': 'artificial intelligence machine learning',
-                'limit': count * 2,
+                'limit': count,
                 'fields': 'title,abstract,authors,year,url,externalIds'
             }
 
@@ -423,6 +423,7 @@ class AINewsDaily:
 
         news_items = []
 
+        # 第一步：先获取所有新闻（不翻译）
         for source_key, source_config in self.news_sources.items():
             try:
                 print(f"  📡 正在获取: {source_config['name']}")
@@ -440,10 +441,6 @@ class AINewsDaily:
                         # 清理HTML标签
                         summary_text = re.sub(r'<[^>]+>', '', summary_text)
 
-                        # 翻译
-                        title_zh = self.translate_to_chinese(entry.title, is_title=True)
-                        summary_zh = self.translate_to_chinese(summary_text[:500]) if summary_text else title_zh
-
                         # 发布时间
                         published_time = datetime.datetime.now()
                         if hasattr(entry, 'published_parsed') and entry.published_parsed:
@@ -455,12 +452,12 @@ class AINewsDaily:
                         news = {
                             'type': 'news',
                             'title': entry.title,
-                            'title_zh': title_zh,
-                            'summary_quote': self.generate_one_sentence_summary(title_zh),
+                            'title_zh': None,  # 稍后翻译
+                            'summary_quote': None,
                             'source': source_config['name'],
                             'source_key': source_key,
                             'link': entry.link,
-                            'summary': summary_zh,
+                            'summary': None,  # 稍后翻译
                             'summary_en': summary_text,
                             'published': entry.get('published', datetime.datetime.now().strftime('%Y-%m-%d')),
                             'published_time': published_time,
@@ -478,8 +475,15 @@ class AINewsDaily:
         # 按优先级排序，同优先级按时间排序
         news_items.sort(key=lambda x: (x['priority'], x['published_time']), reverse=True)
 
-        # 限制数量
+        # 限制数量（只保留目标数量）
         news_items = news_items[:target_count]
+
+        # 第二步：只对最终选中的新闻进行翻译
+        for news in news_items:
+            news['title_zh'] = self.translate_to_chinese(news['title'], is_title=True)
+            news['summary_zh'] = self.translate_to_chinese(news['summary_en'][:500]) if news['summary_en'] else news['title_zh']
+            news['summary'] = news['summary_zh']
+            news['summary_quote'] = self.generate_one_sentence_summary(news['title_zh'])
 
         print(f"✅ 共获取 {len(news_items)} 条新闻")
         return news_items
