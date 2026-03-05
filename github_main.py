@@ -266,8 +266,8 @@ class AINewsDaily:
                 # 生成一句话概要
                 summary_quote = self.generate_one_sentence_summary(title_zh)
 
-                # 翻译摘要（只翻译前500字符以节省成本）
-                summary_zh = self.translate_to_chinese(result.summary[:500])
+                # 翻译完整摘要（用于详情页，150-300字）
+                summary_zh = self.translate_to_chinese(result.summary[:2000])
 
                 paper = {
                     'type': 'paper',
@@ -318,10 +318,27 @@ class AINewsDaily:
                     if not title:
                         continue
 
-                    title_zh = self.translate_to_chinese(title, is_title=True)
+                    # 尝试通过arXiv ID获取摘要
+                    arxiv_id = item.get('arxiv_id', '')
+                    summary_en = ''
+                    if arxiv_id:
+                        try:
+                            # 从arXiv获取摘要
+                            arxiv_url = f"https://arxiv.org/abs/{arxiv_id}"
+                            arxiv_response = requests.get(arxiv_url, timeout=10)
+                            if arxiv_response.status_code == 200:
+                                match = re.search(r'<span class="abstract-full-text"[^>]*>(.*?)</span>', arxiv_response.text, re.DOTALL)
+                                if match:
+                                    summary_en = re.sub(r'<.*?>', '', match.group(1)).strip()
+                        except:
+                            pass
 
-                    summary = item.get('paper_id', '')
-                    summary_zh = title_zh
+                    # 如果没有获取到摘要，使用标题
+                    if not summary_en:
+                        summary_en = title
+
+                    title_zh = self.translate_to_chinese(title, is_title=True)
+                    summary_zh = self.translate_to_chinese(summary_en[:2000]) if summary_en else title_zh
 
                     paper = {
                         'type': 'paper',
@@ -331,7 +348,7 @@ class AINewsDaily:
                         'summary_quote': self.generate_one_sentence_summary(title_zh),
                         'authors': [a.get('author_name', '') for a in item.get('authors', [])[:3]],
                         'summary': summary_zh,
-                        'summary_en': summary,
+                        'summary_en': summary_en,
                         'published': item.get('published', datetime.datetime.now().strftime('%Y-%m-%d')),
                         'published_time': datetime.datetime.now(),
                         'pdf_url': item.get('pdf_url', ''),
@@ -379,7 +396,8 @@ class AINewsDaily:
                     title_zh = self.translate_to_chinese(title, is_title=True)
 
                     abstract = item.get('abstract', '')
-                    summary_zh = self.translate_to_chinese(abstract[:500]) if abstract else title_zh
+                    # 翻译完整摘要（用于详情页，150-300字）
+                    summary_zh = self.translate_to_chinese(abstract[:2000]) if abstract else title_zh
 
                     authors = item.get('authors', [])[:3]
                     authors_names = [a.get('name', '') for a in authors]
@@ -481,7 +499,8 @@ class AINewsDaily:
         # 第二步：只对最终选中的新闻进行翻译
         for news in news_items:
             news['title_zh'] = self.translate_to_chinese(news['title'], is_title=True)
-            news['summary_zh'] = self.translate_to_chinese(news['summary_en'][:500]) if news['summary_en'] else news['title_zh']
+            # 翻译完整摘要（用于详情页，150-300字）
+            news['summary_zh'] = self.translate_to_chinese(news['summary_en'][:2000]) if news['summary_en'] else news['title_zh']
             news['summary'] = news['summary_zh']
             news['summary_quote'] = self.generate_one_sentence_summary(news['title_zh'])
 
