@@ -357,7 +357,7 @@ class AINewsDaily:
 
         papers = []
         try:
-            url = "https://api.semantic scholar.org/graph/v1/paper/search"
+            url = "https://api.semanticscholar.org/graph/v1/paper/search"
             params = {
                 'query': 'artificial intelligence machine learning',
                 'limit': count * 2,
@@ -409,6 +409,9 @@ class AINewsDaily:
 
                 print(f"✅ 获取到 {len(papers)} 篇论文")
 
+        except requests.exceptions.RequestException as e:
+            # 网络错误（DNS解析失败、连接超时等）
+            print(f"⚠️ 获取Semantic Scholar论文失败（网络问题）: {e}")
         except Exception as e:
             print(f"⚠️ 获取Semantic Scholar论文失败: {e}")
 
@@ -423,7 +426,7 @@ class AINewsDaily:
         for source_key, source_config in self.news_sources.items():
             try:
                 print(f"  📡 正在获取: {source_config['name']}")
-                feed = feedparser.parse(source_config['url'], timeout=10)
+                feed = feedparser.parse(source_config['url'])
 
                 for entry in feed.entries:
                     text = f"{entry.title} {entry.get('summary', '')}"
