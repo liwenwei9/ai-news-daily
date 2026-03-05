@@ -563,7 +563,7 @@ class AINewsDaily:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用中文读AI新闻 - {self.github_user}</title>
-    <meta name="description" content="每日AI论文和新闻，全中文阅读 - DeepSeek翻译">
+    <meta name="description" content="每日AI论文和新闻，全中文阅读 ">
     <style>
         * {{
             margin: 0;
@@ -884,7 +884,7 @@ class AINewsDaily:
 
     <div class="hero">
         <h1>用<span class="highlight">中文</span>读AI新闻</h1>
-        <div class="subtitle">每日精选AI论文和科技新闻 · DeepSeek翻译</div>
+        <div class="subtitle">每日精选AI论文和科技新闻 </div>
 
         <div class="tabs">
             <button class="tab active" data-type="all">全部 ({len(items)})</button>
@@ -905,7 +905,7 @@ class AINewsDaily:
         <p>🤖 由AI自动生成 | 每日更新 | 使用DeepSeek翻译</p>
         <p>数据来源：arXiv + MIT Technology Review</p>
         <p>🚀 <a href="https://github.com/{self.github_user}/{self.repo_name}" target="_blank">查看GitHub项目</a></p>
-        <p style="margin-top: 20px; font-size: 0.85rem;">灵感来源：<a href="https://zeli.app" target="_blank">Zeli</a></p>
+        <p style="margin-top: 20px; font-size: 0.85rem;">灵感来源：<a href=" " target="_blank">Zeli</a></p>
     </footer>
 
     <script>
